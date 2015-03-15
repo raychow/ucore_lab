@@ -29,3 +29,12 @@
     4. 向 0x60 地址写入 0xdf，即使能 A20 地址线。
 4. `lgdt gdtdesc` 初始化了 GDT 表，表的定义在 `gdtdesc` 段中给出，包含了代码段与数据段；
 5. 将 `%cr0` 的第 1 位置为 1，进入保护模式。
+
+## 练习 4: 分析 bootloader 加载 ELF 格式的 OS 的过程
+
+1. bootloader 首先读取 ELF header，但实际上读取了 8 个扇区，远远超过了 ELF header 的大小，应该是把之后要用的 program section header 都读进来了；
+2. 检查 ELF header 的第一个字节是否为 0x464C457FU，如果不是就意味着有问题；
+3. program section header 在 ELF header 起始位置的后 `e_phoff` 处，并且一共有 `e_phnum`个，进入循环开始读取每一个程序段：
+    * `ph->p_va` 是在内存中的逻辑地址，`ph->p_memsz` 是程序段大小，`ph->p_offset` 是从硬盘中读取的位置；
+    * 由于只能对整个扇区进行读取操作，所以如果 `p_offset` 不是扇区大小的整数倍，`readseg` 中会从扇区开始读取，因此会向内存的目标位置之前多写入一些东西。当然，也可能在之后多写入。
+4. 全数加载完毕后，转到 ELF header 的 `e_entry` 位置开始运行系统。

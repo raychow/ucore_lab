@@ -52,6 +52,7 @@ idt_init(void) {
         SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
     }
     SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    SETGATE(idt[T_SWITCH_TOK], 1, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
     lidt(&idt_pd);
 }
 
@@ -141,6 +142,43 @@ print_regs(struct pushregs *regs) {
     cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+struct trapframe user_trapframe;
+
+static void
+switch_to_user(struct trapframe *tf) {
+    if (USER_CS != tf->tf_cs) {
+        user_trapframe = *tf;
+        user_trapframe.tf_cs = USER_CS;
+        user_trapframe.tf_ds = USER_DS;
+        user_trapframe.tf_es = USER_DS;
+        user_trapframe.tf_fs = USER_DS;
+        user_trapframe.tf_gs = USER_DS;
+        user_trapframe.tf_ss = USER_DS;
+        user_trapframe.tf_esp = (uint32_t)&tf->tf_esp;
+        user_trapframe.tf_eflags |= FL_IOPL_MASK;
+
+        // "popl %esp" in vector.S
+        *((uint32_t *)tf - 1) = (uint32_t)&user_trapframe;
+    }
+}
+
+static void
+switch_to_kernel(struct trapframe *tf) {
+    if (KERNEL_CS != tf->tf_cs) {
+        struct trapframe *dest_tf = (tf->tf_esp - (sizeof(struct trapframe) - 8));
+        memmove(dest_tf, tf, sizeof(struct trapframe) - 8);
+
+        dest_tf->tf_cs = KERNEL_CS;
+        dest_tf->tf_ds = KERNEL_DS;
+        dest_tf->tf_es = KERNEL_DS;
+        dest_tf->tf_fs = KERNEL_DS;
+        dest_tf->tf_gs = KERNEL_DS;
+        dest_tf->tf_eflags &= ~FL_IOPL_MASK;
+
+        *((uint32_t *)tf - 1) = (uint32_t)dest_tf;
+    }
+}
+
 /* trap_dispatch - dispatch based on what type of trap occurred */
 static void
 trap_dispatch(struct trapframe *tf) {
@@ -169,8 +207,10 @@ trap_dispatch(struct trapframe *tf) {
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
+        switch_to_user(tf);
+        break;
     case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
+        switch_to_kernel(tf);
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:

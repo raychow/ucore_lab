@@ -142,30 +142,23 @@ print_regs(struct pushregs *regs) {
     cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
-struct trapframe user_trapframe;
-
 static void
 switch_to_user(struct trapframe *tf) {
     if (USER_CS != tf->tf_cs) {
-        user_trapframe = *tf;
-        user_trapframe.tf_cs = USER_CS;
-        user_trapframe.tf_ds = USER_DS;
-        user_trapframe.tf_es = USER_DS;
-        user_trapframe.tf_fs = USER_DS;
-        user_trapframe.tf_gs = USER_DS;
-        user_trapframe.tf_ss = USER_DS;
-        user_trapframe.tf_esp = (uint32_t)&tf->tf_esp;
-        user_trapframe.tf_eflags |= FL_IOPL_MASK;
-
-        // "popl %esp" in vector.S
-        *((uint32_t *)tf - 1) = (uint32_t)&user_trapframe;
+        tf->tf_cs = USER_CS;
+        tf->tf_ds = USER_DS;
+        tf->tf_es = USER_DS;
+        tf->tf_fs = USER_DS;
+        tf->tf_gs = USER_DS;
+        tf->tf_eflags |= FL_IOPL_MASK;
+        tf->tf_ss = USER_DS;
     }
 }
 
 static void
 switch_to_kernel(struct trapframe *tf) {
     if (KERNEL_CS != tf->tf_cs) {
-        struct trapframe *dest_tf = (tf->tf_esp - (sizeof(struct trapframe) - 8));
+        struct trapframe *dest_tf = (uint32_t *)tf + 2;
         memmove(dest_tf, tf, sizeof(struct trapframe) - 8);
 
         dest_tf->tf_cs = KERNEL_CS;

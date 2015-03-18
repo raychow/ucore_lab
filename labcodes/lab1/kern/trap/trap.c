@@ -206,7 +206,6 @@ trap_dispatch(struct trapframe *tf) {
                 tf->tf_gs = KERNEL_DS;
                 tf->tf_eflags &= ~FL_IOPL_MASK;
             }
-            print_trapframe(tf);
             break;
         case '3':
             if (USER_CS != tf->tf_cs) {
@@ -218,7 +217,6 @@ trap_dispatch(struct trapframe *tf) {
                 tf->tf_ss = USER_DS;
                 tf->tf_eflags |= FL_IOPL_MASK;
             }
-            print_trapframe(tf);
             break;
         }
         cprintf("kbd [%03d] %c\n", c, c);

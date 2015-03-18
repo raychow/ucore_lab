@@ -90,7 +90,6 @@ lab1_switch_to_user(void) {
             "movl %%ebp, %%esp;"
             :
             : "i" (T_SWITCH_TOU));
-    print_stackframe();
 }
 
 static void

@@ -210,6 +210,7 @@ page_init(void) {
     extern char end[];
 
     npage = maxpa / PGSIZE;
+    // end is set in kernel.ld
     pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);
 
     for (i = 0; i < npage; i ++) {

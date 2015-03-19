@@ -39,3 +39,21 @@
     通常情况下是不会出现这种双重中断的问题的，出现了的话就说明内核写的有问题了。在 [Intel® 64 and IA-32 Architectures](http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-system-programming-manual-325384.pdf) 的 6-28 中，明确指出在处理缺页异常时再次发生缺页异常，会导致发生 Double Fault 异常，只能保存程序的上下文信息并强制关闭程序。
 
     另参见: [Page fault in Interrupt contex](http://stackoverflow.com/questions/4848457/page-fault-in-interrupt-context)
+
+## 练习 3: 释放某虚地址所在的页并取消对应二级页表项的映射
+
+* 在 `page_remove_pte` 函数中：
+
+    1. 检查页表项是否存在，如果存在才进行移除；
+
+    2. 通过页表项内容找到页面地址，减少一次页面引用，如果页面引用为 0，释放这个页面；
+
+    3. 清除页表项内容，无效快表内容。
+
+* 数据结构 `Page` 的全局变量（其实是一个数组） 的每一项与页表中的页目录项和页表项有无对应关系？ 如果有，其对应关系是啥？
+
+    有对应关系，页目录项或页表项的高 20 位实际上存放的是 `pages` 数组的索引，也就是页面物理地址的高 20 位。
+
+* 如果希望虚拟地址与物理地址相等，则需要如何修改 lab2，完成此事？
+
+    在 `get_pte` 调用 `alloc_page` 时，指定分配与虚拟地址相同的物理地址，就能实现。

@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <console.h>
 #include <kdebug.h>
+#include <string.h>
 
 #define TICK_NUM 100
 
@@ -158,7 +159,7 @@ switch_to_user(struct trapframe *tf) {
 static void
 switch_to_kernel(struct trapframe *tf) {
     if (KERNEL_CS != tf->tf_cs) {
-        struct trapframe *dest_tf = (uint32_t *)tf + 2;
+        struct trapframe *dest_tf = (struct trapframe *)((uint32_t *)tf + 2);
         memmove(dest_tf, tf, sizeof(struct trapframe) - 8);
 
         dest_tf->tf_cs = KERNEL_CS;

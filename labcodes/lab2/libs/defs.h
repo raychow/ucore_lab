@@ -51,6 +51,34 @@ typedef size_t ppn_t;
             (typeof(a))(ROUNDDOWN((size_t)(a) + __n - 1, __n));     \
         })
 
+/* Is x a power of 2? */
+#define is_power_of_2(n) ((n) != 0 && (((n) & ((n) - 1)) == 0))
+
+#define previous_power_of_2(n) ({                                   \
+            size_t __n = n | (n >> 1);                              \
+            __n = __n | (__n >> 2);                                 \
+            __n = __n | (__n >> 4);                                 \
+            __n = __n | (__n >> 8);                                 \
+            __n = __n | (__n >> 16);                                \
+            (typeof(n))(__n - (__n >> 1));                          \
+        })
+
+#define next_power_of_2(n) ({                                       \
+            size_t __n = n - 1;                                     \
+            __n = __n | (__n >> 1);                                 \
+            __n = __n | (__n >> 2);                                 \
+            __n = __n | (__n >> 4);                                 \
+            __n = __n | (__n >> 8);                                 \
+            __n = __n | (__n >> 16);                                \
+            (typeof(n))(__n + 1);                                   \
+        })
+
+#define max(a,b) ({                                                 \
+            typeof (a) _a = (a);                                    \
+            typeof (b) _b = (b);                                    \
+            _a > _b ? _a : _b;                                      \
+        })
+
 /* Return the offset of 'member' relative to the beginning of a struct type */
 #define offsetof(type, member)                                      \
     ((size_t)(&((type *)0)->member))

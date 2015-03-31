@@ -13,22 +13,22 @@ struct Page *buddy_base;
 unsigned int buddy_size;
 
 static inline unsigned int get_longest(struct Page *bb, unsigned int i) {
-    unsigned int __i = i >> 1;
-    if (i & 1) {
-        return (unsigned int)bb[__i].page_link.next;
-    } else {
-        return (unsigned int)bb[__i].page_link.prev;
-    }
+    uint8_t exp = ((uint8_t *)&bb[i >> 2].property)[i & 0b11];
+    return 0xFF == exp ? 0 : 1 << exp;
 }
 
 static inline void set_longest(struct Page *bb,
-        unsigned int i, unsigned int longset) {
-    unsigned int __i = i >> 1;
-    if (i & 1) {
-        bb[__i].page_link.next = (struct list_entry *)longset;
+        unsigned int i, unsigned int longest) {
+    uint8_t exp;
+    if (0 == longest) {
+        exp = 0xFF;
     } else {
-        bb[__i].page_link.prev = (struct list_entry *)longset;
+        exp = 0;
+        while (longest >>= 1) {
+            ++exp;
+        }
     }
+    ((uint8_t *)&bb[i >> 2].property)[i & 0b11] = exp;
 }
 
 static void buddy_init(void) {
@@ -44,20 +44,19 @@ static void buddy_init_memmap(struct Page *base, size_t n) {
     buddy_base = base;
     buddy_size = previous_power_of_2(n);
     unsigned int node_size = buddy_size << 1;
-    int i = 0;
-    for (; i < 2 * buddy_size - 1; ++i) {
-        struct Page *p = buddy_base + (i >> 1);
-        assert((i & 1) || PageReserved(p));
+    struct Page *p;
+    for (p = base; p != base + n; ++p) {
+        assert(PageReserved(p));
         p->flags = p->property = 0;
         set_page_ref(p, 0);
+        SetPageProperty(p);
+    }
+    int i;
+    for (i = 0; i < 2 * buddy_size - 1; ++i) {
         if (is_power_of_2(i + 1)) {
             node_size >>= 1;
         }
-        if (i & 1) {
-            p->page_link.next = (struct list_entry *)node_size;
-        } else {
-            p->page_link.prev = (struct list_entry *)node_size;
-        }
+        set_longest(buddy_base, i, node_size);
     }
 }
 
@@ -67,7 +66,7 @@ buddy_alloc_pages(size_t n) {
     if (!is_power_of_2(n)) {
         n = next_power_of_2(n);
     }
-    if ((size_t)buddy_base->page_link.prev < n) {
+    if (get_longest(buddy_base, 0) < n) {
         return NULL;
     }
 
@@ -130,7 +129,7 @@ static void buddy_free_pages(struct Page *base, size_t n) {
 }
 
 static size_t buddy_nr_free_pages(void) {
-    return (size_t)buddy_base->page_link.prev;
+    return get_longest(buddy_base, 0);
 }
 
 static void default_check(void) {
@@ -176,7 +175,7 @@ static void default_check(void) {
     for (i = 0; i < buddy_size; ++i) {
         free_page(buddy_base + i);
     }
-    assert((unsigned int)buddy_base->page_link.prev == buddy_size);
+    assert(get_longest(buddy_base, 0) == buddy_size);
 }
 
 const struct pmm_manager buddy_pmm_manager = { .name = "buddy_pmm_manager",

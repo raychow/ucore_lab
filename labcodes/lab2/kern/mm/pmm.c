@@ -389,8 +389,7 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
             // (7) set page directory entry's permission
             *pdep = pa | PTE_U | PTE_W | PTE_P;
         }
-        else
-        {
+        else {
             return NULL;
         }
     }

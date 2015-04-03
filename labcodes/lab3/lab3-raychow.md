@@ -26,7 +26,7 @@
 * 实现过程
 
     1. `do_pgfault` 函数:
-    补充完成了换入页面的逻辑，首先使用 `swap_in` 换入页面，并使用 `page_insert` 插入页面，最后标记页面为可交换的。
+    补充完成了换入页面的逻辑，首先使用 `swap_in` 换入页面，并使用 `page_insert` 插入页面，最后标记页面为可交换的并更新 `Page` 的 `pra_vaddr`。
     
     2. `_fifo_map_swappable` 函数:
     只需要将页面插入到 `mm->sm_priv` 的结尾即可。

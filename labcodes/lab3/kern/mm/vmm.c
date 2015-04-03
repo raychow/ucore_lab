@@ -22,7 +22,7 @@
 --------------
   vma related functions:
    global functions
-     struct vma_struct * vma_create (uintptr_t vm_start, uintptr_t vm_end,...)
+     struct vma_struct * vma_create(uintptr_t vm_start, uintptr_t vm_end, ...)
      void insert_vma_struct(struct mm_struct *mm, struct vma_struct *vma)
      struct vma_struct * find_vma(struct mm_struct *mm, uintptr_t addr)
    local functions
@@ -346,7 +346,7 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
 
     ret = -E_NO_MEM;
 
-    pte_t *ptep=NULL;
+    pte_t *ptep = NULL;
     /*LAB3 EXERCISE 1: YOUR CODE
     * Maybe you want help comment, BELOW comments can help you finish the code
     *
@@ -364,12 +364,12 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     *   mm->pgdir : the PDT of these vma
     *
     */
-#if 0
     /*LAB3 EXERCISE 1: YOUR CODE*/
-    ptep = ???              //(1) try to find a pte, if pte's PT(Page Table) isn't existed, then create a PT.
+    //(1) try to find a pte, if pte's PT(Page Table) isn't existed, then create a PT.
+    ptep = get_pte(mm->pgdir, addr, 1);
     if (*ptep == 0) {
-                            //(2) if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
-
+        //(2) if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
+        pgdir_alloc_page(mm->pgdir, addr, perm);
     }
     else {
     /*LAB3 EXERCISE 2: YOUR CODE
@@ -394,9 +394,8 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
             cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
             goto failed;
         }
-   }
-#endif
-   ret = 0;
+    }
+    ret = 0;
 failed:
     return ret;
 }

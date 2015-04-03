@@ -683,13 +683,13 @@ print_pgdir(void) {
 
 void *
 kmalloc(size_t n) {
-    void * ptr=NULL;
-    struct Page *base=NULL;
+    void * ptr = NULL;
+    struct Page *base = NULL;
     assert(n > 0 && n < 1024*0124);
-    int num_pages=(n+PGSIZE-1)/PGSIZE;
+    int num_pages = (n + PGSIZE - 1) / PGSIZE;
     base = alloc_pages(num_pages);
     assert(base != NULL);
-    ptr=page2kva(base);
+    ptr = page2kva(base);
     return ptr;
 }
 
@@ -698,7 +698,7 @@ kfree(void *ptr, size_t n) {
     assert(n > 0 && n < 1024*0124);
     assert(ptr != NULL);
     struct Page *base=NULL;
-    int num_pages=(n+PGSIZE-1)/PGSIZE;
+    int num_pages = (n + PGSIZE - 1) / PGSIZE;
     base = kva2page(ptr);
     free_pages(base, num_pages);
 }

@@ -236,29 +236,6 @@ trap_dispatch(struct trapframe *tf) {
         break;
     case IRQ_OFFSET + IRQ_KBD:
         c = cons_getc();
-        switch (c) {
-        case '0':
-            if (KERNEL_CS != tf->tf_cs) {
-                tf->tf_cs = KERNEL_CS;
-                tf->tf_ds = KERNEL_DS;
-                tf->tf_es = KERNEL_DS;
-                tf->tf_fs = KERNEL_DS;
-                tf->tf_gs = KERNEL_DS;
-                tf->tf_eflags &= ~FL_IOPL_MASK;
-            }
-            break;
-        case '3':
-            if (USER_CS != tf->tf_cs) {
-                tf->tf_cs = USER_CS;
-                tf->tf_ds = USER_DS;
-                tf->tf_es = USER_DS;
-                tf->tf_fs = USER_DS;
-                tf->tf_gs = USER_DS;
-                tf->tf_ss = USER_DS;
-                tf->tf_eflags |= FL_IOPL_MASK;
-            }
-            break;
-        }
         cprintf("kbd [%03d] %c\n", c, c);
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.

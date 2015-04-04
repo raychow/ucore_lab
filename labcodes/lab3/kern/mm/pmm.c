@@ -390,7 +390,7 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
         if (create) {
             struct Page *page = alloc_page();
             if (NULL == page) {
-                panic("create page table failed.\n");
+                return NULL;
             }
             // (4) set page reference
             set_page_ref(page, 1);

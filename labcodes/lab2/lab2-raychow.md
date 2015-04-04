@@ -71,11 +71,11 @@
 
 3. 回收内存的函数只能指定分配内存函数返回的页面作为参数，而不是任意一个已被分配的页面，这是为了高效实现内存分配与回收算法限制的。进一步的，此函数亦无法指定要回收内存的大小，因为回收的一定是分配出去的一整块内存。
 
-在 `buddy_pmm.h` 中，声明了伙伴内存管理器 `buddy_pmm_manager`,只要将 `init_pmm_manager()` 中的 pmm_manager 改成 `buddy_pmm_manager` 就能使用伙伴内存管理器。
+在 `kern/mm/buddy_pmm.h` 中，声明了伙伴内存管理器 `buddy_pmm_manager`,只要将 `init_pmm_manager()` 中的 pmm_manager 改成 `buddy_pmm_manager` 就能使用伙伴内存管理器。
 
 此外，在 `libs/defs.h` 中加入了几个辅助宏定义，`is_power_of_2` 判断一个数是否为 2 的整数次幂，`previous_power_of_2` 返回小于等于一个数的最接近 2 的整数次幂的数字，`previous_power_of_2` 返回小于等于一个数的最接近 2 的整数次幂的数字，`next_power_of_2` 返回大于等于一个数的最接近 2 的整数次幂的数字，而 `max` 返回两个数中较大的数字。
 
-主要的实现在 `buddy_pmm.c` 中，包含如下全局变量:
+主要的实现在 `kern/mm/buddy_pmm.c` 中，包含如下全局变量:
 
 1. `free_area`
 记录了所有可用的内存块以及剩余空间总和。

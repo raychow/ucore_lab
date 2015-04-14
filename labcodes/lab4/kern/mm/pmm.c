@@ -384,18 +384,32 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
      *   PTE_W           0x002                   // page table/directory entry flags bit : Writeable
      *   PTE_U           0x004                   // page table/directory entry flags bit : User can access
      */
-#if 0
-    pde_t *pdep = NULL;   // (1) find page directory entry
-    if (0) {              // (2) check if entry is not present
-                          // (3) check if creating is needed, then alloc page for page table
-                          // CAUTION: this page is used for page table, not for common data page
-                          // (4) set page reference
-        uintptr_t pa = 0; // (5) get linear address of page
-                          // (6) clear page content using memset
-                          // (7) set page directory entry's permission
+    // (1) find page directory entry
+    pde_t *pdep = pgdir + PDX(la);
+    // (2) check if entry is not present
+    if (!(*pdep & PTE_P)) {
+        // (3) check if creating is needed, then alloc page for page table
+        // CAUTION: this page is used for page table, not for common data page
+        if (create) {
+            struct Page *page = alloc_page();
+            if (NULL == page) {
+                return NULL;
+            }
+            // (4) set page reference
+            set_page_ref(page, 1);
+            // (5) get linear address of page
+            uintptr_t pa = page2pa(page);
+            // (6) clear page content using memset
+            memset(KADDR(pa), 0, PGSIZE);
+            // (7) set page directory entry's permission
+            *pdep = pa | PTE_U | PTE_W | PTE_P;
+        }
+        else {
+            return NULL;
+        }
     }
-    return NULL;          // (8) return page table entry
-#endif
+    // (8) return page table entry
+    return ((pte_t *)KADDR(PDE_ADDR(*pdep)) + PTX(la));
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir

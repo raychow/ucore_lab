@@ -121,6 +121,10 @@ alloc_proc(void) {
      *       uint32_t wait_state;                        // waiting state
      *       struct proc_struct *cptr, *yptr, *optr;     // relations between processes
 	 */
+        proc->wait_state = 0;
+        proc->cptr = NULL;
+        proc->yptr = NULL;
+        proc->optr = NULL;
     }
     return proc;
 }
@@ -405,6 +409,8 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     if (NULL == proc) {
         goto fork_out;
     }
+    assert(0 == current->wait_state);
+    proc->parent = current;
     //    2. call setup_kstack to allocate a kernel stack for child process
     if (0 != setup_kstack(proc)) {
         goto bad_fork_cleanup_proc;
@@ -422,7 +428,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
         proc->pid = get_pid();
         hash_proc(proc);
         list_add(&proc_list, &proc->list_link);
-        ++nr_process;
+        set_links(proc);
     }
     local_intr_restore(intr_flag);
     //    6. call wakup_proc to make the new child process RUNNABLE

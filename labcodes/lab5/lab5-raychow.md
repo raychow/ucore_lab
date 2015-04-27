@@ -47,4 +47,14 @@
 
 2. 请给出 ucore 中一个用户态进程的执行状态生命周期图。
 
-    // TODO.
+盗图一张：
+                                                
+      alloc_proc                                 RUNNING
+          +                                   +--<----<--+
+          +                                   + proc_run +
+          V                                   +-->---->--+ 
+    PROC_UNINIT -- proc_init/wakeup_proc --> PROC_RUNNABLE -- try_free_pages/do_wait/do_sleep --> PROC_SLEEPING --
+                                               A      +                                                          +
+                                               |      +--- do_exit --> PROC_ZOMBIE                               +
+                                               +                                                                 + 
+                                               -----------------------wakeup_proc---------------------------------

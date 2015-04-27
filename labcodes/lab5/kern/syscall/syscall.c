@@ -16,7 +16,7 @@ static int
 sys_fork(uint32_t arg[]) {
     struct trapframe *tf = current->tf;
     uintptr_t stack = tf->tf_esp;
-    return do_fork(0, stack, tf);
+    return do_fork(CLONE_VM, stack, tf);
 }
 
 static int

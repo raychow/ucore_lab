@@ -51,7 +51,7 @@ int mm_map(struct mm_struct *mm, uintptr_t addr, size_t len, uint32_t vm_flags,
 int do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr);
 
 int mm_unmap(struct mm_struct *mm, uintptr_t addr, size_t len);
-int dup_mmap(struct mm_struct *to, struct mm_struct *from);
+int dup_mmap(struct mm_struct *to, struct mm_struct *from, bool share);
 void exit_mmap(struct mm_struct *mm);
 uintptr_t get_unmapped_area(struct mm_struct *mm, size_t len);
 int mm_brk(struct mm_struct *mm, uintptr_t addr, size_t len);

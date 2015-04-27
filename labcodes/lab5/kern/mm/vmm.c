@@ -188,7 +188,7 @@ out:
 }
 
 int
-dup_mmap(struct mm_struct *to, struct mm_struct *from) {
+dup_mmap(struct mm_struct *to, struct mm_struct *from, bool share) {
     assert(to != NULL && from != NULL);
     list_entry_t *list = &(from->mmap_list), *le = list;
     while ((le = list_prev(le)) != list) {
@@ -201,8 +201,12 @@ dup_mmap(struct mm_struct *to, struct mm_struct *from) {
 
         insert_vma_struct(to, nvma);
 
-        bool share = 0;
-        if (copy_range(to->pgdir, from->pgdir, vma->vm_start, vma->vm_end, share) != 0) {
+        if (copy_range(to->pgdir,
+                       from->pgdir,
+                       vma->vm_start,
+                       vma->vm_end,
+                       share && !(vma->vm_flags & VM_STACK),
+                       0) != 0) {
             return -E_NO_MEM;
         }
     }
@@ -404,6 +408,11 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     switch (error_code & 3) {
     default:
             /* error code flag : default is 3 ( W/R=1, P=1): write, present */
+        if (!(vma->vm_flags & VM_WRITE)) {
+            cprintf("do_pgfault failed: error code flag = write AND present, but the addr's vma cannot write\n");
+            goto failed;
+        }
+        break;
     case 2: /* error code flag : (W/R=1, P=0): write, not present */
         if (!(vma->vm_flags & VM_WRITE)) {
             cprintf("do_pgfault failed: error code flag = write AND not present, but the addr's vma cannot write\n");
@@ -485,23 +494,29 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
 		  2) *ptep & PTE_P == 0 & but *ptep!=0, it means this pte is a  swap entry.
 		     We should add the LAB3's results here.
      */
-        if(swap_init_ok) {
-            struct Page *page = NULL;
-            //(1）According to the mm AND addr, try to load the content of right disk page
-            //    into the memory which page managed.
-            if (0 != swap_in(mm, addr, &page)) {
-                cprintf("swap_in in do_pgfault failed\n");
+        if (*ptep & PTE_P) {
+            // cow
+            cprintf("ray: cow!\n");
+            copy_range(mm->pgdir, mm->pgdir, vma->vm_start, vma->vm_end, 0, vma->vm_flags & VM_WRITE ? PTE_W : 0);
+        } else {
+            if(swap_init_ok) {
+                struct Page *page = NULL;
+                //(1）According to the mm AND addr, try to load the content of right disk page
+                //    into the memory which page managed.
+                if (0 != swap_in(mm, addr, &page)) {
+                    cprintf("swap_in in do_pgfault failed\n");
+                    goto failed;
+                }
+                //(2) According to the mm, addr AND page, setup the map of phy addr <---> logical addr
+                page_insert(mm->pgdir, page, addr, perm);
+                //(3) make the page swappable.
+                page->pra_vaddr = addr;
+                swap_map_swappable(mm, addr, page, 1);
+            }
+            else {
+                cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
                 goto failed;
             }
-            //(2) According to the mm, addr AND page, setup the map of phy addr <---> logical addr
-            page_insert(mm->pgdir, page, addr, perm);
-            //(3) make the page swappable.
-            page->pra_vaddr = addr;
-            swap_map_swappable(mm, addr, page, 1);
-        }
-        else {
-            cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
-            goto failed;
         }
     }
     ret = 0;

@@ -322,10 +322,6 @@ copy_mm(uint32_t clone_flags, struct proc_struct *proc) {
     if (oldmm == NULL) {
         return 0;
     }
-    if (clone_flags & CLONE_VM) {
-        mm = oldmm;
-        goto good_mm;
-    }
 
     int ret = -E_NO_MEM;
     if ((mm = mm_create()) == NULL) {
@@ -337,7 +333,7 @@ copy_mm(uint32_t clone_flags, struct proc_struct *proc) {
 
     lock_mm(oldmm);
     {
-        ret = dup_mmap(mm, oldmm);
+        ret = dup_mmap(mm, oldmm, clone_flags & CLONE_VM);
     }
     unlock_mm(oldmm);
 

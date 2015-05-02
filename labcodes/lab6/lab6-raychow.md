@@ -47,3 +47,22 @@
     
     5. `proc_tick`
         减少进程的剩余时间片，如果时间片成为 0，就将进程标记为待调度的状态。
+
+## 练习2: 实现 Stride Scheduling 调度算法
+
+在 Stride Scheduling 的 default_sched.c 中，完成了以下函数：
+
+    1. `stride_init`
+        初始化运行队列。
+    
+    2. `stride_enqueue`
+        使用 `skew_heap_insert` 将进程插入就绪队列中并维持斜堆的性质。之后，更新进程的可用时间片。
+    
+    3. `stride_dequeue`
+        使用 `skew_heap_remove` 将进程从就绪队列中移除并维持斜堆的性质。
+    
+    4. `stride_pick_next`
+        由于是一个最小堆，斜堆中的第一个元素一定是 stride 最小的，因此直接选中。之后，更新选中进程的 stride。
+    
+    5. `stride_proc_tick`
+        减少进程的剩余时间片，如果剩余 0，则标记为待调度状态。

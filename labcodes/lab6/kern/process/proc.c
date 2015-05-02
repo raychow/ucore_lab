@@ -132,7 +132,7 @@ alloc_proc(void) {
         proc->lab6_run_pool.right = NULL;
         proc->lab6_run_pool.parent = NULL;
         proc->lab6_stride = 0;
-        proc->lab6_priority = 0;
+        proc->lab6_priority = 1;
     }
     return proc;
 }

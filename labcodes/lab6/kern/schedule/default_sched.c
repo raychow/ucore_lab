@@ -77,7 +77,9 @@ stride_enqueue(struct run_queue *rq, struct proc_struct *proc) {
     rq->lab6_run_pool = skew_heap_insert(rq->lab6_run_pool,
             &proc->lab6_run_pool,
             proc_stride_comp_f);
-    proc->time_slice = rq->max_time_slice;
+    if (proc->time_slice == 0 || proc->time_slice > rq->max_time_slice) {
+        proc->time_slice = rq->max_time_slice;
+    }
     proc->rq = rq;
     ++rq->proc_num;
 }
@@ -105,6 +107,7 @@ stride_dequeue(struct run_queue *rq, struct proc_struct *proc) {
     proc->lab6_run_pool.left = NULL;
     proc->lab6_run_pool.right = NULL;
     proc->lab6_run_pool.parent = NULL;
+    --rq->proc_num;
 }
 /*
  * stride_pick_next pick the element from the ``run-queue'', with the
@@ -128,6 +131,9 @@ stride_pick_next(struct run_queue *rq) {
       * (2) update p;s stride value: p->lab6_stride
       * (3) return p
       */
+    if (NULL == rq->lab6_run_pool) {
+        return NULL;
+    }
     struct proc_struct *proc = le2proc(rq->lab6_run_pool, lab6_run_pool);
     assert(0 != proc->lab6_priority);
     proc->lab6_stride += BIG_STRIDE / proc->lab6_priority;

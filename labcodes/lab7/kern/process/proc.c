@@ -103,22 +103,36 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
+        proc->state = PROC_UNINIT;
+        proc->pid = -1;
+        proc->runs = 0;
+        proc->kstack = 0;
+        proc->need_resched = 0;
+        proc->parent = NULL;
+        proc->mm = NULL;
+        memset(&proc->context, 0, sizeof(proc->context));
+        proc->tf = NULL;
+        proc->cr3 = boot_cr3;
+        proc->flags = 0;
+        proc->name[0] = 0;
      //LAB5 YOUR CODE : (update LAB4 steps)
     /*
      * below fields(add in LAB5) in proc_struct need to be initialized	
      *       uint32_t wait_state;                        // waiting state
      *       struct proc_struct *cptr, *yptr, *optr;     // relations between processes
 	 */
-     //LAB6 YOUR CODE : (update LAB5 steps)
-    /*
-     * below fields(add in LAB6) in proc_struct need to be initialized
-     *     struct run_queue *rq;                       // running queue contains Process
-     *     list_entry_t run_link;                      // the entry linked in run queue
-     *     int time_slice;                             // time slice for occupying the CPU
-     *     skew_heap_entry_t lab6_run_pool;            // FOR LAB6 ONLY: the entry in the run pool
-     *     uint32_t lab6_stride;                       // FOR LAB6 ONLY: the current stride of the process
-     *     uint32_t lab6_priority;                     // FOR LAB6 ONLY: the priority of process, set by lab6_set_priority(uint32_t)
-     */
+        proc->wait_state = 0;
+        proc->cptr = NULL;
+        proc->yptr = NULL;
+        proc->optr = NULL;
+        proc->rq = NULL;
+        list_init(&proc->run_link);
+        proc->time_slice = 0;
+        proc->lab6_run_pool.left = NULL;
+        proc->lab6_run_pool.right = NULL;
+        proc->lab6_run_pool.parent = NULL;
+        proc->lab6_stride = 0;
+        proc->lab6_priority = 1;
     }
     return proc;
 }
@@ -399,12 +413,35 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
      */
 
     //    1. call alloc_proc to allocate a proc_struct
+    proc = alloc_proc();
+    if (NULL == proc) {
+        goto fork_out;
+    }
+    assert(0 == current->wait_state);
+    proc->parent = current;
     //    2. call setup_kstack to allocate a kernel stack for child process
+    if (0 != setup_kstack(proc)) {
+        goto bad_fork_cleanup_proc;
+    }
     //    3. call copy_mm to dup OR share mm according clone_flag
+    if (0 != copy_mm(clone_flags, proc)) {
+        goto bad_fork_cleanup_kstack;
+    }
     //    4. call copy_thread to setup tf & context in proc_struct
+    copy_thread(proc, stack, tf);
     //    5. insert proc_struct into hash_list && proc_list
+    bool intr_flag;
+    local_intr_save(intr_flag);
+    {
+        proc->pid = get_pid();
+        hash_proc(proc);
+        set_links(proc);
+    }
+    local_intr_restore(intr_flag);
     //    6. call wakup_proc to make the new child process RUNNABLE
+    wakeup_proc(proc);
     //    7. set ret vaule using child proc's pid
+    ret = proc->pid;
 
 	//LAB5 YOUR CODE : (update LAB4 steps)
    /* Some Functions
@@ -612,7 +649,15 @@ load_icode(unsigned char *binary, size_t size) {
      *          tf_eip should be the entry point of this binary program (elf->e_entry)
      *          tf_eflags should be set to enable computer to produce Interrupt
      */
+    tf->tf_cs = USER_CS;
+    tf->tf_ds = USER_DS;
+    tf->tf_es = USER_DS;
+    tf->tf_ss = USER_DS;
+    tf->tf_esp = USTACKTOP;
+    tf->tf_eip = elf->e_entry;
+    tf->tf_eflags = FL_IF;
     ret = 0;
+
 out:
     return ret;
 bad_cleanup_mmap:

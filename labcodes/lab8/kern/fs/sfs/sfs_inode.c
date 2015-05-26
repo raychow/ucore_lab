@@ -403,7 +403,7 @@ sfs_dirent_read_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, int slot, stru
         return ret;
     }
     assert(sfs_block_inuse(sfs, ino));
-	// read the content of file entry in the disk block 
+	// read the content of file entry in the disk block
     if ((ret = sfs_rbuf(sfs, entry, sizeof(struct sfs_disk_entry), ino, 0)) != 0) {
         return ret;
     }
@@ -594,10 +594,10 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
 	 * (1) If offset isn't aligned with the first block, Rd/Wr some content from offset to the end of the first block
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op
 	 *               Rd/Wr size = (nblks != 0) ? (SFS_BLKSIZE - blkoff) : (endpos - offset)
-	 * (2) Rd/Wr aligned blocks 
+	 * (2) Rd/Wr aligned blocks
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_block_op
      * (3) If end position isn't aligned with the last block, Rd/Wr some content from begin to the (endpos % SFS_BLKSIZE) of the last block
-	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op	
+	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op
 	*/
     blkoff = offset % SFS_BLKSIZE;
     if (0 != blkoff) {
@@ -608,9 +608,13 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
                 || 0 != (ret = sfs_buf_op(sfs, buf, size, ino, blkoff))) {
             goto out;
         }
-        buf += size;
         alen += size;
+        if (0 == nblks) {
+            goto out;
+        }
+        buf += size;
         ++blkno;
+        --nblks;
     }
     while (nblks > 0) {
         if (0 != (ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino))
@@ -945,7 +949,7 @@ sfs_truncfile(struct inode *node, off_t len) {
         }
     }
     else if (tblks < nblks) {
-		// try to reduce the file size 
+		// try to reduce the file size
         while (tblks != nblks) {
             if ((ret = sfs_bmap_truncate_nolock(sfs, sin)) != 0) {
                 goto out_unlock;
